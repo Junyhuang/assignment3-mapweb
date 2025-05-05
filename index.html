@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <title>Sensor Data Layers</title>
+
+  <link rel="stylesheet" href="https://js.arcgis.com/4.32/esri/themes/light/main.css" />
+  <script src="https://js.arcgis.com/4.32/"></script>
+
+  <style>
+    html, body, #viewDiv {
+      padding: 0;
+      margin: 0;
+      height: calc(100% - 80px);
+      width: 100%;
+    }
+    #footer {
+      background-color: #f8f8f8;
+      padding: 10px;
+      font-size: 13px;
+      color: #333;
+      position: absolute;
+      bottom: 0;
+      width: 100%;
+      box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
+    }
+    #footer div {
+      margin-bottom: 1px;
+    }
+    #footer h4 {
+      margin: 1px 0;
+      font-size: 14px;
+    }
+  </style>
+
+  <script>
+    require([
+      "esri/Map",
+      "esri/views/MapView",
+      "esri/layers/FeatureLayer",
+      "esri/widgets/Legend",
+      "esri/widgets/LayerList"
+    ], function(Map, MapView, FeatureLayer, Legend, LayerList) {
+
+      const map = new Map({
+        basemap: "satellite"
+      });
+
+      const view = new MapView({
+        container: "viewDiv",
+        map: map,
+        center: [8.51, 47.406], // Near ETH Hönggerberg
+        zoom: 15
+      });
+
+      // Humidity layer (Blue, 5 classes)
+      const humidityLayer = new FeatureLayer({
+        url: "https://services-eu1.arcgis.com/DmEtBMiyE68OImsA/arcgis/rest/services/sensebox_collecte_data_250501/FeatureServer/0",
+        title: "Humidity (Blue)",
+        renderer: {
+          type: "simple",
+          symbol: {
+            type: "simple-marker",
+            style: "circle",
+            size: 6,
+            outline: {
+              color: "white",
+              width: 0.1
+            }
+          },
+          visualVariables: [{
+            type: "color",
+            field: "humidity",
+            legendOptions: {
+              title: "Relative Humidity (%)"
+            },
+            stops: [
+              { value: 20, color: "#deebf7", label: "< 20%" },
+              { value: 35, color: "#9ecae1", label: "35%" },
+              { value: 50, color: "#6baed6", label: "50%" },
+              { value: 65, color: "#3182bd", label: "65%" },
+              { value: 80, color: "#08519c", label: "> 80%" }
+            ]
+          }]
+        },
+        popupTemplate: {
+          title: "Data Collection Route Point",
+          content: `
+            <b>Humidity:</b> {humidity}%<br/>
+            <b>Illuminance:</b> {illuminance__Lux_} Lux<br/>
+            <b>UV Light:</b> {UV_light___ÌW_cm2_} µW/cm²<br/>
+            <b>Timestamp:</b> {timestamp}
+          `
+        },
+        visible: true
+      });
+
+     
+      // UV Light Radiance（red, 5 classes）
+      const UVLightLayer = new FeatureLayer({
+        url: "https://services-eu1.arcgis.com/DmEtBMiyE68OImsA/arcgis/rest/services/sensebox_collecte_data_250501/FeatureServer/0",
+        title: "UV Light (Red)",
+        renderer: {
+          type: "simple",
+          symbol: {
+            type: "simple-marker",
+            style: "circle",
+            size: 6,
+            outline: {
+              color: "white",
+              width: 0.1
+            }
+          },
+          visualVariables: [{
+            type: "color",
+            field: "UV_light___ÌW_cm2_",
+            legendOptions: {
+              title: "UV Radiation (µW/cm²)" 
+            },
+            stops: [
+              { value: 40, color: "#fdd0a2", label: "< 40 µW/cm²" },
+              { value: 2000, color: "#fdae6b", label: "2000 µW/cm²" },
+              { value: 4000, color: "#fd8d3c", label: "4000 µW/cm²" },
+              { value: 6000, color: "#f16913", label: "6000 µW/cm²" },
+              { value: 8000, color: "#d94801", label: "> 8000 µW/cm²" }
+            ]
+          }]
+        },
+        popupTemplate: {
+          title: "Data Collection Route Point",
+          content: `
+            <b>Humidity:</b> {humidity}%<br/>
+            <b>Illuminance:</b> {illuminance__Lux_} Lux<br/>
+            <b>UV Light:</b> {UV_light___ÌW_cm2_} µW/cm²<br/>
+            <b>Timestamp:</b> {timestamp}
+          `
+        },
+        visible: false 
+      });
+      
+        // Soil Moisture 5cm from opensensemap
+        const soilLayer = new FeatureLayer({
+          url: "https://services-eu1.arcgis.com/DmEtBMiyE68OImsA/arcgis/rest/services/opensensemap_SoilMoisture5cm_SenseBox_250501/FeatureServer",
+          title: "Soil Moisture 5cm (opensensemap)",
+          renderer: {
+            type: "simple",
+             symbol: {
+                type: "simple-marker",
+                color: "#4daf4a", // same green
+                outline: { width: 0.5, color: "white" }
+              },
+              visualVariables: [{
+                type: "size",
+                field: "value", // soil moisture value
+                legendOptions: {
+                  title: "Soil Moistrue (%)"
+                },
+                stops: [
+                  { value: 10, size: 7 },
+                  { value: 20, size: 14 },
+                  { value: 30, size: 21 }
+                ]
+              }]
+            },
+          popupTemplate: {
+            title: "SoilMoisture_5cm from opensensemap sensor boxes",
+            content: `
+                      <b>Sensorbox Name:</b> {boxName}<br/>
+                      <b>Moisture:</b> {value} %<br/>
+                      <b>Time:</b> {createdAt}<br/>
+                      `
+          },
+          visible: true
+        });
+      
+      // HeatFlux from opensensemap
+        const heatLayer = new FeatureLayer({
+          url: "https://services-eu1.arcgis.com/DmEtBMiyE68OImsA/arcgis/rest/services/opensensemap_Heatflux_SenseBox_250501/FeatureServer",
+          title: "HeatFlux (opensensemap)",
+          renderer: {
+            type: "simple",
+             symbol: {
+                type: "simple-marker",
+                color: "#fd8d3c", // same red
+                outline: { width: 0.5, color: "white" }
+              },
+              visualVariables: [{
+                type: "size",
+                field: "value", 
+                legendOptions: {
+                  title: "HeatFlux (W/m²)"
+                },
+                stops: [
+                  { value: 10, size: 6 },
+                  { value: 20, size: 12 },
+                  { value: 30, size: 18 }
+                ]
+              }]
+            },
+          popupTemplate: {
+            title: "Heatflux from opensensemap sensor boxes",
+            content: `
+                      <b>Sensorbox Name:</b> {boxName}<br/>
+                      <b>HeatFlux:</b> {value} W/m²<br/>
+                      <b>Time:</b> {createdAt}<br/>
+                      `
+          },
+          visible: false
+        });
+
+      // add layers
+      map.addMany([humidityLayer, UVLightLayer, soilLayer, heatLayer]);
+
+      // set legend
+      const legend = new Legend({ view: view });
+      view.ui.add(legend, "bottom-left");
+
+      // map control (visibility toggles)
+      const layerList = new LayerList({ view: view });
+      view.ui.add(layerList, "top-right");
+
+    });
+  </script>
+</head>
+
+<body>
+  <div id="viewDiv"></div>
+  <footer id="footer">
+    <div>
+      <h4>About Us</h4>
+      <p>This web map was created for <strong>Assignment 3</strong> of the <strong>Advanced GIS</strong> course at ETH Zurich.</p>
+    </div>
+    <div>
+      <h4>Legal Notice</h4>
+      <p>This application uses ArcGIS Maps SDK for JavaScript. Sensor data is sourced from <strong>SenseBox</strong> and <strong>OpenSenseMap</strong>.</p>
+    </div>
+    <div>
+      <h4>Privacy</h4>
+      <p>This web app does not collect or store any personal user data.</p>
+    </div>
+  </footer>
+</body>
+</html>
